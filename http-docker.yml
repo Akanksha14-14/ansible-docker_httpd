@@ -1,0 +1,48 @@
+- hosts: localhost
+  vars_prompt:
+          - name: name
+            prompt: "containe name"
+            private: no
+  tasks:
+  - name: "configure yum_repository "
+    yum_repository:
+      name: "docker-repo"
+      description: "contain docker versions"
+      baseurl: https://download.docker.com/linux/centos/7/x86_64/stable/
+      gpgcheck: 0
+
+  - block:
+       - name: "check  docker "
+         shell: "docker"
+         changed_when: false
+    rescue:
+       - name: "installing  docker "
+         command: "yum install docker-ce -y --nobest"
+      
+  - name: "installing docker SDK using pip"
+    pip:
+      name: "docker"
+      state: present
+
+  - name: "starting services"
+    service:
+      name: "docker.service"
+      state: started
+      enabled: yes
+
+  - name: "pulling docker images"
+    docker_image:
+      name: "httpd"
+      source: pull
+
+  - name: "create docker container and configure websever "
+    docker_container:
+      name: "{{ name }}"
+      image: "httpd"
+      state: started
+      published_ports:
+              - "8082:80"
+      volumes: "/docker:/usr/local/apache/htdocs/"
+   
+
+  
